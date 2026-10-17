@@ -353,7 +353,7 @@ function BookCard({ book, people, meId, readerIds, onOpen }: { book: Book; peopl
     .sort(([a], [b]) => (a === meId ? -1 : b === meId ? 1 : 0));
   return (
     <button className="book-card press" onClick={(e) => onOpen(e.currentTarget)}>
-      <Cover title={book.title} author={book.authors[0]} src={book.cover} />
+      <Cover title={book.title} author={book.authors[0]} src={book.cover} isbn={book.isbn} />
       <span className="book-card-title">{book.title}</span>
       <span className="book-card-author">{book.authors[0] ?? ' '}</span>
       <span className="book-card-takes">
