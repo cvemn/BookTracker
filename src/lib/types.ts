@@ -64,10 +64,5 @@ export interface Me {
   critter: string;
 }
 
-export interface SyncConfig {
-  url: string;
-  key: string;
-  shelf: string;
-}
 
 export const CRITTERS = ['🐶', '🐱', '🦊', '🐻', '🐰', '🐸', '🐼', '🦉', '🐧', '🦔', '🐨', '🐙'];

@@ -1,4 +1,4 @@
-/** Biscuit, the Dogear pup. One ear is folded down like a dog-eared page. */
+/** Miso, the Dogear pup. One ear is folded down like a dog-eared page. */
 export function Mascot({ size = 56, mood = 'happy' }: { size?: number; mood?: 'happy' | 'sleepy' | 'curious' }) {
   return (
     <svg className={`mascot mascot-${mood}`} width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">

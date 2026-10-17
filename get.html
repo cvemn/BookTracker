@@ -25,7 +25,7 @@
       h1 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; font-size: 2.2rem; margin: 18px 0 4px; font-variation-settings: 'SOFT' 100, 'WONK' 1; }
       .lead { margin: 0; color: var(--ink-2); font-size: 1.05rem; line-height: 1.45; }
       .card { background: var(--card); border: 2.5px solid var(--ink); border-radius: 22px; padding: 18px; box-shadow: 4px 4px 0 var(--ink); }
-      .card.join { background: var(--pink); }
+      .card.alt { background: var(--pink); }
       .step { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
       .step + .step { margin-top: 16px; }
       .n { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--butter); border: 2.5px solid var(--ink); font-weight: 900; }
@@ -50,7 +50,7 @@
       <header>
         <img src="./icon-192.png" alt="" />
         <h1>Get Dogear</h1>
-        <p class="lead" id="lead">A cozy little shelf for the books you read together.</p>
+        <p class="lead">A cozy little shelf for every book you read.</p>
       </header>
 
       <section class="card">
@@ -68,40 +68,13 @@
             <p>Tap the download when it finishes. The first time, your Galaxy asks about installing apps from your browser: tap <b>Settings</b>, switch on <b>Allow from this source</b>, go back, and tap <b>Install</b>.</p>
           </div>
         </div>
-        <div class="step" id="join-step" hidden>
-          <span class="n">3</span>
-          <div>
-            <b>Join the shelf</b>
-            <p>Copy your invite, open Dogear, tap <b>Got an invite link from your person?</b> and paste it.</p>
-            <button class="big ghost" id="copy" type="button">📋 Copy my invite</button>
-          </div>
-        </div>
       </section>
 
-      <section class="card join" id="web">
+      <section class="card alt" id="web">
         <h2>Rather not install anything?</h2>
         <p style="margin: 0">Dogear also works right in your browser. Open it in Chrome or Samsung Internet and tap <b>Install</b> or <b>Add to Home screen</b>.</p>
         <a class="big ghost" id="open-web" href="./">Open Dogear in my browser</a>
       </section>
     </main>
-    <script>
-      // An invite link (…/get.html#join=…) carries over to both ways of getting the app.
-      const m = /join=([A-Za-z0-9_-]+)/.exec(location.hash);
-      if (m) {
-        const invite = location.href.split('#')[0].replace(/get\.html$/, '') + '#join=' + m[1];
-        document.getElementById('lead').textContent = 'You’ve been invited to a shared bookshelf 💞 Here’s how to get it.';
-        document.getElementById('join-step').hidden = false;
-        document.getElementById('open-web').href = './#join=' + m[1];
-        const btn = document.getElementById('copy');
-        btn.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(invite);
-            btn.textContent = '✓ Copied! Now open Dogear';
-          } catch {
-            prompt('Copy this invite link:', invite);
-          }
-        });
-      }
-    </script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchDescription } from '../lib/search';
-import { profiles, removeMyTake, setTake, updateBook, useStore } from '../lib/store';
+import { removeBook, setTake, updateBook, useStore } from '../lib/store';
 import { STATUSES, VIBES, type Book, type Take } from '../lib/types';
 import { ConfirmButton } from './ConfirmButton';
 import { Cover } from './Cover';
@@ -11,7 +11,6 @@ import { Sheet } from './Sheet';
 export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose: () => void }) {
   const entry = useStore((s) => (bookId ? s.entries[bookId] : undefined));
   const me = useStore((s) => s.me);
-  const entries = useStore((s) => s.entries);
   const book = entry?.kind === 'book' && !entry.deleted ? entry : undefined;
 
   // Fill in the blurb the first time a book is opened.
@@ -29,8 +28,6 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
   if (!book || !me) return <Sheet open={false} onClose={onClose} label="Book">{null}</Sheet>;
 
   const mine = book.takes[me.readerId];
-  const people = profiles({ entries });
-  const others = Object.entries(book.takes).filter(([id]) => id !== me.readerId);
 
   return (
     <Sheet open onClose={onClose} label={book.title} wide>
@@ -47,7 +44,7 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
       <section className="take take-mine">
         <header>
           <span className="avatar">{me.critter}</span>
-          <h3>Your take</h3>
+          <h3>My take</h3>
         </header>
         {mine ? (
           <TakeEditor key={book.id} book={book} take={mine} />
@@ -70,35 +67,12 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
         )}
       </section>
 
-      {others.map(([readerId, t]) => {
-        const p = people.find((x) => x.readerId === readerId);
-        return (
-          <section key={readerId} className="take take-theirs">
-            <header>
-              <span className="avatar">{p?.critter ?? '🐾'}</span>
-              <h3>{p?.name ?? 'Your person'}’s take</h3>
-              <span className={`status-tag tag-${t.status}`}>{STATUSES.find((s) => s.id === t.status)?.label}</span>
-            </header>
-            <Hearts value={t.rating} />
-            {t.vibes.length > 0 && (
-              <div className="vibes readonly">
-                {t.vibes.map((v) => {
-                  const vb = VIBES.find((x) => x.id === v);
-                  return vb ? <span key={v} className="vibe on" title={vb.label}>{vb.emoji} {vb.label}</span> : null;
-                })}
-              </div>
-            )}
-            {t.note ? <p className="note-readonly">{t.note}</p> : <p className="muted">No scribbles yet.</p>}
-          </section>
-        );
-      })}
-
       {mine && (
         <ConfirmButton
           className="link-btn danger"
           confirmText="Tap again to remove it"
           onConfirm={() => {
-            removeMyTake(book.id);
+            removeBook(book.id);
             onClose();
           }}
         >

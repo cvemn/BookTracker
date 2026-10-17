@@ -1,10 +1,10 @@
 # 🐶 Dogear
 
-A cozy little shelf for the books you read together.
+A cozy little shelf for every book Kaila reads.
 
-Dogear keeps track of every book you've read, how much you loved it (in hearts),
-the vibes it gave you, and your scribbles about it. Share one shelf with your
-person and you'll each see the other's ratings and notes.
+Dogear keeps track of every book she's read, how much she loved it (in hearts),
+the vibes it gave her, and her scribbles about it. Miso the pup says hello every
+time it opens, and the very first time gives a quick four-step tour.
 
 <p>
   <img src="docs/shelf.png" width="260" alt="The shelf">
@@ -15,17 +15,14 @@ person and you'll each see the other's ratings and notes.
 - **Find any book**: type a title, author or ISBN and Dogear fetches the cover,
   author, year, page count and blurb from [Open Library](https://openlibrary.org)
   (falling back to Google Books). No API key needed. Can't find it? Add it by hand.
-- **Your take, their take**: each of you marks a book as *Read it*, *Reading* or
-  *Want to read*, gives it up to 5 hearts, picks vibes (😭 🫶 🌶️ 🤯 …) and writes
-  scribbles. Their take shows right under yours.
-- **Shared shelf**: one invite link and you're both on the same shelf, synced
-  across phones and computers. Filter by *Ours*, *Mine* or theirs.
+- **My take**: mark a book as *Read it*, *Reading* or *Want to read*, give it up
+  to 5 hearts, pick vibes (😭 🫶 🌶️ 🤯 …) and write scribbles.
 - **Works offline** and installs like a real app on Android and iPhone.
-- **Backup** your whole shelf to a file any time.
-- **Never loses your books**: everything is saved on the phone as you go (in the
-  Android app, to the app's own storage, which Android also backs up with the
-  phone), and a shared shelf keeps a full copy in the cloud that a new phone
-  restores from when you rejoin.
+- **Never loses her books**: everything is saved on the phone as you go (in the
+  Android app, to the app's own storage too, which Android backs up with the
+  phone). **Me → Save a backup** sends a backup file to Google Drive, email or
+  Files through the share sheet, and **Restore from a backup** brings it all back
+  on any phone.
 
 ## Using it
 
@@ -39,10 +36,10 @@ One-time setup: in the repo go to **Settings → Pages** and set **Source** to
 
 ### On Android
 
-The easiest way: start a shared shelf and send your person the invite link. It
-opens a little **Get Dogear** page (`get.html`) with a big *Download for Android*
-button, the two taps Samsung/Android asks for, and a *Copy my invite* button to
-join your shelf once it's installed. The page also offers the browser version.
+The easiest way: send her the **Get Dogear** page
+(`https://<owner>.github.io/BookTracker/get.html`). It has a big *Download for
+Android* button and shows the two taps Samsung/Android asks for. The page also
+offers the browser version.
 
 Or, two ways by hand:
 
@@ -61,30 +58,6 @@ SDK), or `npm run android && npx cap open android` to use Android Studio.
 
 Open the site in Safari, tap **Share → Add to Home Screen**.
 
-## Sharing a shelf with your person
-
-Sync uses a free [Supabase](https://supabase.com) project as a tiny shared
-database. It takes about two minutes, once:
-
-1. Create a free project at supabase.com.
-2. Open **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql) and press **Run**.
-   (The app has a *Copy SQL* button for this too.)
-3. In Dogear, tap your avatar (top right) → **Start a shared shelf**, and paste the
-   **Project URL** and the **anon public key** from Supabase's
-   **Project Settings → API** page.
-4. Tap **Share link** and send it to your person. Opening it puts them on the shelf.
-
-How it stays private: the table is locked with row-level security, so the public
-key alone can't read anything. Every read and write goes through two database
-functions that require the shelf's secret code, which only exists inside your
-invite link. Treat the invite link like a house key.
-
-Optional: set repository **variables** `SUPABASE_URL` and `SUPABASE_ANON_KEY`
-(Settings → Secrets and variables → Actions → Variables) and the deployed app
-will fill those in for you on step 3.
-
-Without sync, Dogear works fine on one device; everything is saved in the browser.
-
 ## Developing
 
 ```sh
@@ -99,9 +72,9 @@ Built with React, TypeScript and Vite. Android packaging uses Capacitor.
 | Path | What's there |
 | --- | --- |
 | `src/lib/search.ts` | Open Library / Google Books lookup |
-| `src/lib/store.ts` | Local state, saving, background sync |
-| `src/lib/merge.ts` | Merging two copies of a shelf (each reader's take merges separately) |
-| `src/lib/sync.ts` | Talking to Supabase |
+| `src/lib/store.ts` | Local state and saving |
+| `src/lib/vault.ts` | Durable storage (browser + Android native copy) |
+| `src/lib/backup.ts` | Backup files via the share sheet |
+| `src/lib/merge.ts` | Merging a restored backup into the shelf |
 | `src/components/` | Screens and sheets |
-| `supabase/schema.sql` | The shared database |
 | `android-res/` | Android launcher icons |
