@@ -2,39 +2,28 @@ import { useSyncExternalStore } from 'react';
 import { mergeAll } from './merge';
 import { randomId } from './ids';
 import { askToKeepData, readLocal, readNative, writeDurable } from './vault';
-import * as remote from './sync';
 import type { SearchResult } from './search';
-import type { Book, Entry, Me, Profile, Status, SyncConfig, Take } from './types';
-
-export type SyncState = 'off' | 'idle' | 'syncing' | 'error';
+import { CRITTERS, type Book, type Entry, type Me, type Status, type Take } from './types';
 
 export interface State {
   me: Me | null;
-  sync: SyncConfig | null;
   entries: Record<string, Entry>;
-  syncState: SyncState;
-  syncError?: string;
-  lastSynced?: number;
 }
 
 const KEY = 'dogear:v1';
+/** Dogear is made for one reader. */
+export const HER_NAME = 'Kaila';
 
 function parse(raw: string | null): State {
   try {
     if (raw) {
       const saved = JSON.parse(raw);
-      return {
-        me: saved.me ?? null,
-        sync: saved.sync ?? null,
-        entries: saved.entries ?? {},
-        syncState: saved.sync ? 'idle' : 'off',
-        lastSynced: saved.lastSynced,
-      };
+      return { me: saved.me ?? null, entries: saved.entries ?? {} };
     }
   } catch {
     // corrupted storage: start fresh rather than crash
   }
-  return { me: null, sync: null, entries: {}, syncState: 'off' };
+  return { me: null, entries: {} };
 }
 
 let state: State = parse(readLocal(KEY));
@@ -45,6 +34,19 @@ let state: State = parse(readLocal(KEY));
  */
 export async function hydrate() {
   askToKeepData();
+  await restoreNative();
+  // Only after the native copy had its say, so a fresh profile never outranks saved books.
+  if (!state.me) firstVisit = true;
+  if (!state.me || state.me.name !== HER_NAME) setMe(HER_NAME, state.me?.critter ?? CRITTERS[0]);
+}
+
+let firstVisit = false;
+/** True on the very first launch, so the welcome can say hello instead of welcome back. */
+export function isFirstVisit() {
+  return firstVisit;
+}
+
+async function restoreNative() {
   const raw = await readNative(KEY);
   if (!raw) {
     if (Object.keys(state.entries).length || state.me) persist(); // seed the native copy
@@ -66,13 +68,13 @@ export async function hydrate() {
 const listeners = new Set<() => void>();
 
 function persist() {
-  const { me, sync, entries, lastSynced } = state;
-  writeDurable(KEY, JSON.stringify({ me, sync, entries, lastSynced, savedAt: Date.now() }));
+  const { me, entries } = state;
+  writeDurable(KEY, JSON.stringify({ me, entries, savedAt: Date.now() }));
 }
 
-function set(patch: Partial<State>, { save = true } = {}) {
+function set(patch: Partial<State>) {
   state = { ...state, ...patch };
-  if (save) persist();
+  persist();
   listeners.forEach((l) => l());
 }
 
@@ -93,21 +95,14 @@ function putEntries(list: Entry[]) {
   const entries = { ...state.entries };
   for (const e of list) entries[e.id] = e;
   set({ entries });
-  scheduleSync();
 }
 
-/* ---------- readers ---------- */
+/* ---------- her ---------- */
 
 export function setMe(name: string, critter: string) {
   const readerId = state.me?.readerId ?? randomId(8);
   const me: Me = { readerId, name: name.trim(), critter };
   set({ me });
-  const profile: Profile = { kind: 'profile', id: `profile:${readerId}`, readerId, name: me.name, critter, updatedAt: Date.now() };
-  putEntries([profile]);
-}
-
-export function profiles(s: Pick<State, 'entries'>): Profile[] {
-  return Object.values(s.entries).filter((e): e is Profile => e.kind === 'profile');
 }
 
 export function books(s: Pick<State, 'entries'>): Book[] {
@@ -184,113 +179,37 @@ export function setTake(id: string, patch: Partial<Take>) {
   putEntries([{ ...b, takes: { ...b.takes, [me.readerId]: next }, updatedAt: now }]);
 }
 
-export function removeMyTake(id: string) {
-  const b = state.entries[id];
-  const me = state.me;
-  if (!b || b.kind !== 'book' || !me) return;
-  const takes = { ...b.takes };
-  delete takes[me.readerId];
-  // A book nobody has on their shelf any more goes away entirely.
-  const deleted = Object.keys(takes).length === 0;
-  putEntries([{ ...b, takes, deleted, updatedAt: Date.now() }]);
-}
-
-/* ---------- sync ---------- */
-
-let timer: ReturnType<typeof setTimeout> | undefined;
-let running: Promise<void> | null = null;
-let again = false;
-
-export function scheduleSync(delay = 1200) {
-  if (!state.sync) return;
-  clearTimeout(timer);
-  timer = setTimeout(() => void syncNow(), delay);
-}
-
-export async function syncNow(): Promise<void> {
-  if (!state.sync) return;
-  if (running) {
-    again = true;
-    return running;
-  }
-  running = (async () => {
-    const cfg = state.sync!;
-    set({ syncState: 'syncing' }, { save: false });
-    try {
-      const theirs = await remote.pull(cfg);
-      // Re-read local entries after the network round trip so edits made
-      // while we were waiting are included.
-      const { merged, toPush } = mergeAll(Object.values(state.entries), theirs);
-      await remote.push(cfg, toPush);
-      if (state.sync !== cfg) return; // disconnected meanwhile
-      const entries = { ...state.entries };
-      for (const e of merged) {
-        const cur = entries[e.id];
-        // Keep anything edited locally during the push; it'll go next round.
-        if (!cur || cur.updatedAt <= e.updatedAt) entries[e.id] = e;
-        else again = true;
-      }
-      set({ entries, syncState: 'idle', syncError: undefined, lastSynced: Date.now() });
-    } catch (err) {
-      set({ syncState: 'error', syncError: (err as Error).message }, { save: false });
-    } finally {
-      running = null;
-      if (again) {
-        again = false;
-        scheduleSync(300);
-      }
-    }
-  })();
-  return running;
-}
-
-export async function connect(cfg: SyncConfig) {
-  // Fail loudly before saving if the details are wrong.
-  await remote.pull(cfg);
-  set({ sync: cfg, syncState: 'idle', syncError: undefined });
-  await syncNow();
-}
-
-export function disconnect() {
-  set({ sync: null, syncState: 'off', syncError: undefined });
-}
-
-export function newShelfCode() {
-  return randomId(16);
+export function removeBook(id: string) {
+  const entries = { ...state.entries };
+  delete entries[id];
+  set({ entries });
 }
 
 /* ---------- backup ---------- */
 
 export function exportBackup(): string {
-  return JSON.stringify({ app: 'dogear', version: 1, exportedAt: new Date().toISOString(), entries: Object.values(state.entries) }, null, 2);
+  return JSON.stringify(
+    { app: 'dogear', version: 1, exportedAt: new Date().toISOString(), me: state.me, entries: books(state) },
+    null,
+    2,
+  );
 }
 
+/**
+ * Bring books back from a backup file. A backup from another phone was made
+ * under a different reader id, so every take in it is moved onto this reader.
+ */
 export function importBackup(json: string): number {
   const data = JSON.parse(json);
+  const me = state.me!;
   const list: Entry[] = Array.isArray(data?.entries) ? data.entries : [];
-  const valid = list.filter((e) => e && typeof e.id === 'string' && (e.kind === 'book' || e.kind === 'profile'));
-  const { merged } = mergeAll(Object.values(state.entries), valid);
+  const incoming: Book[] = list
+    .filter((e): e is Book => !!e && typeof e.id === 'string' && e.kind === 'book' && !e.deleted && typeof e.title === 'string')
+    .map((b) => {
+      const newest = Object.values(b.takes ?? {}).sort((x, y) => y.updatedAt - x.updatedAt)[0];
+      return { ...b, takes: newest ? { [me.readerId]: newest } : {} };
+    });
+  const { merged } = mergeAll(Object.values(state.entries), incoming);
   set({ entries: Object.fromEntries(merged.map((e) => [e.id, e])) });
-  scheduleSync(100);
-  return valid.filter((e) => e.kind === 'book').length;
-}
-
-/* ---------- lifecycle ---------- */
-
-export function startBackgroundSync() {
-  void syncNow();
-  const tick = setInterval(() => {
-    if (document.visibilityState === 'visible') void syncNow();
-  }, 20000);
-  const onFocus = () => void syncNow();
-  window.addEventListener('focus', onFocus);
-  window.addEventListener('online', onFocus);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') void syncNow();
-  });
-  return () => {
-    clearInterval(tick);
-    window.removeEventListener('focus', onFocus);
-    window.removeEventListener('online', onFocus);
-  };
+  return incoming.length;
 }

@@ -84,7 +84,7 @@ export function SearchSheet({ open, onClose, onAdded }: { open: boolean; onClose
           {phase === 'idle' && (
             <div className="search-empty">
               <Mascot size={84} mood="curious" />
-              <p>Type a title and Biscuit will fetch it.</p>
+              <p>Type a title and Miso will fetch it.</p>
               <div className="chips">
                 {IDEAS.map((i) => (
                   <button key={i} className="chip" onClick={() => setQ(i)}>{i}</button>

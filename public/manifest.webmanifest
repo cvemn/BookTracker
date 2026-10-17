@@ -1,7 +1,7 @@
 {
   "name": "Dogear",
   "short_name": "Dogear",
-  "description": "A cozy little shelf for the books you read together.",
+  "description": "A cozy little shelf for every book you read.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
