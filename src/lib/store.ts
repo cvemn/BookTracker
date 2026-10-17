@@ -34,7 +34,11 @@ let state: State = parse(readLocal(KEY));
  */
 export async function hydrate() {
   askToKeepData();
-  await restoreNative();
+  try {
+    await restoreNative();
+  } catch {
+    // carry on with what this browser has
+  }
   // Only after the native copy had its say, so a fresh profile never outranks saved books.
   if (!state.me) firstVisit = true;
   if (!state.me || state.me.name !== HER_NAME) setMe(HER_NAME, state.me?.critter ?? CRITTERS[0]);

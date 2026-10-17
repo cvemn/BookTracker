@@ -6,7 +6,8 @@ import { closeTopSheet } from './components/Sheet';
 import './styles.css';
 
 // Restore from the phone's native storage first (Android app), then draw.
-hydrate().finally(() =>
+// Never wait on it for long: a stuck read must not leave a blank screen.
+Promise.race([hydrate(), new Promise((r) => setTimeout(r, 2500))]).finally(() =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

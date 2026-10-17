@@ -28,7 +28,11 @@ export default function App() {
       <Shelf />
       <Welcome />
     </>
-  ) : null;
+  ) : (
+    <div className="loading-pup">
+      <Mascot size={110} mood="sleepy" />
+    </div>
+  );
 }
 
 function Shelf() {
