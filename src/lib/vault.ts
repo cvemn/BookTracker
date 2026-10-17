@@ -6,11 +6,15 @@
  */
 type Prefs = { get(o: { key: string }): Promise<{ value: string | null }>; set(o: { key: string; value: string }): Promise<void> };
 
-let prefs: Promise<Prefs | null> | null = null;
+let prefs: Promise<{ api: Prefs } | null> | null = null;
 
-function nativePrefs(): Promise<Prefs | null> {
+/**
+ * The plugin is boxed because Capacitor plugins answer every property, `then`
+ * included, so resolving a promise with one directly never settles.
+ */
+function nativePrefs(): Promise<{ api: Prefs } | null> {
   prefs ??= import('@capacitor/core')
-    .then(async ({ Capacitor }) => (Capacitor.isNativePlatform() ? ((await import('@capacitor/preferences')).Preferences as Prefs) : null))
+    .then(async ({ Capacitor }) => (Capacitor.isNativePlatform() ? { api: (await import('@capacitor/preferences')).Preferences as Prefs } : null))
     .catch(() => null);
   return prefs;
 }
@@ -24,7 +28,7 @@ export function writeDurable(key: string, value: string) {
     // full or blocked; the native copy below still lands
   }
   clearTimeout(timer);
-  timer = setTimeout(() => void nativePrefs().then((p) => p?.set({ key, value })), 250);
+  timer = setTimeout(() => void nativePrefs().then((p) => p?.api.set({ key, value })), 250);
 }
 
 export function readLocal(key: string): string | null {
@@ -39,7 +43,7 @@ export async function readNative(key: string): Promise<string | null> {
   const p = await nativePrefs();
   if (!p) return null;
   try {
-    return (await p.get({ key })).value;
+    return (await p.api.get({ key })).value;
   } catch {
     return null;
   }

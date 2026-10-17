@@ -510,3 +510,4 @@ button { -webkit-user-select: none; user-select: none; touch-action: manipulatio
 @media (prefers-reduced-motion: reduce) {
   .sprinkles { display: none; }
 }
+.loading-pup { min-height: 100vh; display: grid; place-items: center; }
