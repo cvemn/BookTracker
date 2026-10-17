@@ -111,7 +111,7 @@ code { background: var(--paper-2); padding: 1px 6px; border-radius: 6px; font-si
 @keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* ---------- app shell ---------- */
-.app { max-width: 1100px; margin: 0 auto; padding: 0 16px 120px; }
+.app { max-width: 1100px; margin: 0 auto; padding-bottom: 120px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .topbar {
   position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between;
   padding: max(10px, env(safe-area-inset-top)) 0 10px; background: linear-gradient(var(--paper) 75%, transparent);
@@ -359,3 +359,5 @@ textarea {
   .toolbar-right { width: 100%; }
   .filter { flex: 1; width: auto; min-width: 0; }
 }
+.link-btn.danger.armed, .btn.armed { color: #fff; background: #c0392b; text-decoration: none; border-radius: 999px; padding: 8px 16px; }
+.btn.armed { border-color: var(--line); }

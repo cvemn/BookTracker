@@ -3,6 +3,7 @@ import schemaSql from '../../supabase/schema.sql?raw';
 import { makeInviteLink, readInvite } from '../lib/invite';
 import { connect, disconnect, exportBackup, importBackup, newShelfCode, setMe, syncNow, useStore } from '../lib/store';
 import { CRITTERS } from '../lib/types';
+import { ConfirmButton } from './ConfirmButton';
 import { Sheet } from './Sheet';
 
 export const APP_URL: string = import.meta.env.VITE_APP_URL || (location.protocol.startsWith('http') ? location.href.split('#')[0] : '');
@@ -78,9 +79,9 @@ function ShareCard() {
         </p>
         <div className="row-end">
           <button className="btn ghost" onClick={() => syncNow()}>Sync now</button>
-          <button className="btn ghost" onClick={() => confirm('Stop syncing on this device? Your books stay here.') && disconnect()}>
+          <ConfirmButton className="btn ghost" confirmText="Tap again to stop syncing" onConfirm={disconnect}>
             Leave shelf
-          </button>
+          </ConfirmButton>
         </div>
       </section>
     );

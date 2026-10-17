@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchDescription } from '../lib/search';
 import { profiles, removeMyTake, setTake, updateBook, useStore } from '../lib/store';
 import { STATUSES, VIBES, type Book, type Take } from '../lib/types';
+import { ConfirmButton } from './ConfirmButton';
 import { Cover } from './Cover';
 import { Hearts } from './Hearts';
 import { Sheet } from './Sheet';
@@ -84,17 +85,16 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
       })}
 
       {mine && (
-        <button
+        <ConfirmButton
           className="link-btn danger"
-          onClick={() => {
-            if (confirm('Take this book off your shelf?')) {
-              removeMyTake(book.id);
-              onClose();
-            }
+          confirmText="Tap again to remove it"
+          onConfirm={() => {
+            removeMyTake(book.id);
+            onClose();
           }}
         >
           Remove from my shelf
-        </button>
+        </ConfirmButton>
       )}
     </Sheet>
   );
