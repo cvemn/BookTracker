@@ -93,7 +93,7 @@ code { background: var(--paper-2); padding: 1px 6px; border-radius: 6px; font-si
 
 /* ---------- mascot ---------- */
 .mascot { overflow: visible; }
-.mascot .ear-right { transform-origin: 84px 46px; animation: flop 4s ease-in-out infinite; }
+.mascot .ear-right { transform-box: view-box; transform-origin: 72px 46px; animation: flop 4s ease-in-out infinite; }
 .mascot .eye { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
 .mascot-curious { animation: tilt 2.4s ease-in-out infinite; }
 @keyframes flop { 0%, 85%, 100% { transform: rotate(0); } 90% { transform: rotate(-14deg); } 95% { transform: rotate(4deg); } }
