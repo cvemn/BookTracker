@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { mergeAll } from './merge';
 import { randomId } from './ids';
+import { askToKeepData, readLocal, readNative, writeDurable } from './vault';
 import * as remote from './sync';
 import type { SearchResult } from './search';
 import type { Book, Entry, Me, Profile, Status, SyncConfig, Take } from './types';
@@ -18,9 +19,8 @@ export interface State {
 
 const KEY = 'dogear:v1';
 
-function load(): State {
+function parse(raw: string | null): State {
   try {
-    const raw = localStorage.getItem(KEY);
     if (raw) {
       const saved = JSON.parse(raw);
       return {
@@ -37,16 +37,37 @@ function load(): State {
   return { me: null, sync: null, entries: {}, syncState: 'off' };
 }
 
-let state: State = load();
+let state: State = parse(readLocal(KEY));
+
+/**
+ * In the Android app, the native copy wins if it's newer (or the web copy is
+ * gone), so books survive even if the app's web storage gets wiped.
+ */
+export async function hydrate() {
+  askToKeepData();
+  const raw = await readNative(KEY);
+  if (!raw) {
+    if (Object.keys(state.entries).length || state.me) persist(); // seed the native copy
+    return;
+  }
+  const native = parse(raw);
+  const savedAt = (r: string | null) => {
+    try {
+      return r ? JSON.parse(r).savedAt ?? 0 : -1;
+    } catch {
+      return -1;
+    }
+  };
+  if (savedAt(raw) > savedAt(readLocal(KEY))) {
+    state = native;
+    listeners.forEach((l) => l());
+  }
+}
 const listeners = new Set<() => void>();
 
 function persist() {
-  try {
-    const { me, sync, entries, lastSynced } = state;
-    localStorage.setItem(KEY, JSON.stringify({ me, sync, entries, lastSynced }));
-  } catch {
-    // storage full or blocked; the in-memory state still works
-  }
+  const { me, sync, entries, lastSynced } = state;
+  writeDurable(KEY, JSON.stringify({ me, sync, entries, lastSynced, savedAt: Date.now() }));
 }
 
 function set(patch: Partial<State>, { save = true } = {}) {

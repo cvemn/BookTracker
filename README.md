@@ -22,6 +22,10 @@ person and you'll each see the other's ratings and notes.
   across phones and computers. Filter by *Ours*, *Mine* or theirs.
 - **Works offline** and installs like a real app on Android and iPhone.
 - **Backup** your whole shelf to a file any time.
+- **Never loses your books**: everything is saved on the phone as you go (in the
+  Android app, to the app's own storage, which Android also backs up with the
+  phone), and a shared shelf keeps a full copy in the cloud that a new phone
+  restores from when you rejoin.
 
 ## Using it
 
@@ -35,7 +39,12 @@ One-time setup: in the repo go to **Settings → Pages** and set **Source** to
 
 ### On Android
 
-Two ways, pick whichever:
+The easiest way: start a shared shelf and send your person the invite link. It
+opens a little **Get Dogear** page (`get.html`) with a big *Download for Android*
+button, the two taps Samsung/Android asks for, and a *Copy my invite* button to
+join your shelf once it's installed. The page also offers the browser version.
+
+Or, two ways by hand:
 
 1. **Install from the website (easiest).** Open the site in Chrome on your phone,
    tap **⋮ → Install app** (or **Add to Home screen**). It gets its own icon and

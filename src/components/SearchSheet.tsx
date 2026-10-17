@@ -3,6 +3,7 @@ import { searchBooks, type SearchResult } from '../lib/search';
 import { addBook, findExisting } from '../lib/store';
 import { STATUSES, type Status } from '../lib/types';
 import { Cover } from './Cover';
+import { celebrate, success, tick } from '../lib/feel';
 import { Mascot } from './Mascot';
 import { Sheet } from './Sheet';
 
@@ -52,8 +53,10 @@ export function SearchSheet({ open, onClose, onAdded }: { open: boolean; onClose
     };
   }, [q]);
 
-  const add = (r: SearchResult | Omit<SearchResult, 'key' | 'source'>, status: Status) => {
+  const add = (r: SearchResult | Omit<SearchResult, 'key' | 'source'>, status: Status, el?: HTMLElement) => {
     const id = addBook(r, status);
+    if (status === 'read') celebrate(el);
+    else success();
     onAdded(id);
   };
 
@@ -108,7 +111,7 @@ export function SearchSheet({ open, onClose, onAdded }: { open: boolean; onClose
               const isOpen = picked === r.key;
               return (
                 <li key={r.key} className={`result ${isOpen ? 'open' : ''}`}>
-                  <button className="result-main" onClick={() => setPicked(isOpen ? null : r.key)} aria-expanded={isOpen}>
+                  <button className="result-main" onClick={() => (setPicked(isOpen ? null : r.key), tick())} aria-expanded={isOpen}>
                     <Cover title={r.title} author={r.authors[0]} src={r.cover} className="cover-xs" />
                     <span className="result-text">
                       <strong>{r.title}</strong>
@@ -120,7 +123,7 @@ export function SearchSheet({ open, onClose, onAdded }: { open: boolean; onClose
                   {isOpen && (
                     <div className="result-actions">
                       {STATUSES.map((s) => (
-                        <button key={s.id} className={`pill pill-${s.id}`} onClick={() => add(r, s.id)}>
+                        <button key={s.id} className={`pill pill-${s.id} press`} onClick={(e) => add(r, s.id, e.currentTarget)}>
                           <span aria-hidden="true">{s.emoji}</span> {s.label}
                         </button>
                       ))}

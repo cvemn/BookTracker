@@ -1,13 +1,17 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { hydrate } from './lib/store';
 import { closeTopSheet } from './components/Sheet';
 import './styles.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+// Restore from the phone's native storage first (Android app), then draw.
+hydrate().finally(() =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  ),
 );
 
 // Android app: the hardware back button closes the open sheet first.

@@ -4,6 +4,7 @@ import { profiles, removeMyTake, setTake, updateBook, useStore } from '../lib/st
 import { STATUSES, VIBES, type Book, type Take } from '../lib/types';
 import { ConfirmButton } from './ConfirmButton';
 import { Cover } from './Cover';
+import { celebrate, tick } from '../lib/feel';
 import { Hearts } from './Hearts';
 import { Sheet } from './Sheet';
 
@@ -53,7 +54,15 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
         ) : (
           <div className="pills">
             {STATUSES.map((s) => (
-              <button key={s.id} className={`pill pill-${s.id}`} onClick={() => setTake(book.id, { status: s.id })}>
+              <button
+                key={s.id}
+                className={`pill pill-${s.id}`}
+                onClick={(e) => {
+                  setTake(book.id, { status: s.id });
+                  if (s.id === 'read') celebrate(e.currentTarget);
+                  else tick();
+                }}
+              >
                 <span aria-hidden="true">{s.emoji}</span> {s.label}
               </button>
             ))}
@@ -132,8 +141,10 @@ function TakeEditor({ book, take }: { book: Book; take: Take }) {
   };
   useEffect(() => () => clearTimeout(saveTimer.current), []);
 
-  const toggleVibe = (id: string) =>
+  const toggleVibe = (id: string) => {
+    tick();
     setTake(book.id, { vibes: take.vibes.includes(id) ? take.vibes.filter((v) => v !== id) : [...take.vibes, id] });
+  };
 
   return (
     <div className="take-editor">
@@ -144,7 +155,12 @@ function TakeEditor({ book, take }: { book: Book; take: Take }) {
             role="radio"
             aria-checked={take.status === s.id}
             className={`pill pill-${s.id} ${take.status === s.id ? 'active' : ''}`}
-            onClick={() => setTake(book.id, { status: s.id })}
+            onClick={(e) => {
+              if (s.id === take.status) return;
+              setTake(book.id, { status: s.id });
+              if (s.id === 'read') celebrate(e.currentTarget);
+              else tick();
+            }}
           >
             <span aria-hidden="true">{s.emoji}</span> {s.label}
           </button>

@@ -50,7 +50,8 @@ function ShareCard() {
   const [copied, setCopied] = useState(false);
 
   if (sync) {
-    const link = makeInviteLink(APP_URL, sync);
+    // Send people to the install page; it offers the app and the web version.
+    const link = makeInviteLink(new URL('get.html', APP_URL || location.href).href, sync);
     const share = async () => {
       if (navigator.share) {
         try {
