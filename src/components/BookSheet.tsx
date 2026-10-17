@@ -35,7 +35,7 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
   return (
     <Sheet open onClose={onClose} label={book.title} wide>
       <div className="book-hero">
-        <Cover title={book.title} author={book.authors[0]} src={book.cover} className="cover-lg" />
+        <Cover title={book.title} author={book.authors[0]} src={book.cover} isbn={book.isbn} className="cover-lg" />
         <div className="book-hero-text">
           <h2>{book.title}</h2>
           {book.authors.length > 0 && <p className="by">by {book.authors.join(', ')}</p>}

@@ -112,7 +112,7 @@ export function SearchSheet({ open, onClose, onAdded }: { open: boolean; onClose
               return (
                 <li key={r.key} className={`result ${isOpen ? 'open' : ''}`}>
                   <button className="result-main" onClick={() => (setPicked(isOpen ? null : r.key), tick())} aria-expanded={isOpen}>
-                    <Cover title={r.title} author={r.authors[0]} src={r.cover} className="cover-xs" />
+                    <Cover title={r.title} author={r.authors[0]} src={r.cover} isbn={r.isbn} className="cover-xs" />
                     <span className="result-text">
                       <strong>{r.title}</strong>
                       <span>{[r.authors.slice(0, 2).join(', '), r.year].filter(Boolean).join(' · ')}</span>

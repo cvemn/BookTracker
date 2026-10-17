@@ -16,16 +16,29 @@ function hash(s: string) {
   return Math.abs(h);
 }
 
-export function Cover({ title, author, src, className = '' }: { title: string; author?: string; src?: string; className?: string }) {
-  const [broken, setBroken] = useState(false);
+export function Cover({ title, author, src, isbn, className = '' }: { title: string; author?: string; src?: string; isbn?: string; className?: string }) {
+  // Try the saved cover first, then Open Library's cover for the ISBN, then draw one.
+  const candidates = [src, isbn && `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`].filter(Boolean) as string[];
+  const [attempt, setAttempt] = useState(0);
+  const url = candidates[attempt];
+  const next = () => setAttempt((a) => a + 1);
   const [bg, fg] = PALETTE[hash(title) % PALETTE.length];
   return (
     <div className={`cover ${className}`}>
-      {src && !broken ? (
-        <img src={src} alt="" loading="lazy" onError={() => setBroken(true)} onLoad={(e) => {
-          // Open Library serves a 1x1 gif when it has no cover.
-          if ((e.target as HTMLImageElement).naturalWidth < 10) setBroken(true);
-        }} />
+      {url ? (
+        <img
+          key={url}
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={next}
+          onLoad={(e) => {
+            // Open Library serves a 1x1 gif when it has no cover.
+            if ((e.target as HTMLImageElement).naturalWidth < 10) next();
+          }}
+        />
       ) : (
         <div className="cover-fallback" style={{ background: bg, color: fg }}>
           <span className="cover-fallback-title">{title}</span>
