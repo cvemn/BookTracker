@@ -4,7 +4,7 @@ import { removeBook, setTake, updateBook, useStore } from '../lib/store';
 import { STATUSES, VIBES, type Book, type Take } from '../lib/types';
 import { ConfirmButton } from './ConfirmButton';
 import { Cover } from './Cover';
-import { celebrate, tick } from '../lib/feel';
+import { celebrate, success, tick } from '../lib/feel';
 import { Hearts } from './Hearts';
 import { Sheet } from './Sheet';
 
@@ -12,6 +12,8 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
   const entry = useStore((s) => (bookId ? s.entries[bookId] : undefined));
   const me = useStore((s) => s.me);
   const book = entry?.kind === 'book' && !entry.deleted ? entry : undefined;
+  const [editing, setEditing] = useState(false);
+  useEffect(() => setEditing(false), [bookId]);
 
   // Fill in the blurb the first time a book is opened.
   useEffect(() => {
@@ -28,16 +30,24 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
   if (!book || !me) return <Sheet open={false} onClose={onClose} label="Book">{null}</Sheet>;
 
   const mine = book.takes[me.readerId];
+  if (editing) return (
+    <Sheet open onClose={onClose} label={`Edit ${book.title}`} wide>
+      <EditDetails book={book} onDone={() => setEditing(false)} />
+    </Sheet>
+  );
 
   return (
     <Sheet open onClose={onClose} label={book.title} wide>
       <div className="book-hero">
-        <Cover title={book.title} author={book.authors[0]} src={book.cover} isbn={book.isbn} className="cover-lg" />
+        <Cover key={book.cover ?? ''} title={book.title} author={book.authors[0]} src={book.cover} isbn={book.isbn} className="cover-lg" />
         <div className="book-hero-text">
           <h2>{book.title}</h2>
           {book.authors.length > 0 && <p className="by">by {book.authors.join(', ')}</p>}
           <p className="meta">{[book.year, book.pages && `${book.pages} pages`].filter(Boolean).join(' · ')}</p>
           {book.description && <Blurb text={book.description} />}
+          <button className="btn tiny ghost press edit-details" onClick={() => (setEditing(true), tick())}>
+            ✏️ Edit details
+          </button>
         </div>
       </div>
 
@@ -184,4 +194,130 @@ function TakeEditor({ book, take }: { book: Book; take: Take }) {
       </label>
     </div>
   );
+}
+
+/** Fix anything the book search got wrong, or fill in what it missed. */
+function EditDetails({ book, onDone }: { book: Book; onDone: () => void }) {
+  const [title, setTitle] = useState(book.title);
+  const [authors, setAuthors] = useState(book.authors.join(', '));
+  const [year, setYear] = useState(book.year ? String(book.year) : '');
+  const [pages, setPages] = useState(book.pages ? String(book.pages) : '');
+  const [cover, setCover] = useState(book.cover ?? '');
+  const [description, setDescription] = useState(book.description ?? '');
+  const [photoError, setPhotoError] = useState('');
+
+  const num = (v: string) => {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+  const save = () => {
+    updateBook(book.id, {
+      title: title.trim() || book.title,
+      authors: authors.split(',').map((a) => a.trim()).filter(Boolean),
+      year: num(year),
+      pages: num(pages),
+      cover: cover.trim() || undefined,
+      description: description.trim() || undefined,
+    });
+    success();
+    onDone();
+  };
+
+  return (
+    <form
+      className="edit-details-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save();
+      }}
+    >
+      <h2 className="sheet-title">Edit details</h2>
+      <div className="edit-cover">
+        <Cover key={cover} title={title || book.title} author={authors.split(',')[0]?.trim()} src={cover || undefined} isbn={cover ? undefined : book.isbn} className="cover-md" />
+        <div className="edit-cover-actions">
+          <label className="btn tiny ghost press">
+            📷 Use a photo
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (!file) return;
+                try {
+                  setCover(await shrinkPhoto(file));
+                  setPhotoError('');
+                } catch {
+                  setPhotoError('That photo didn’t work. Try another one?');
+                }
+              }}
+            />
+          </label>
+          {cover && (
+            <button type="button" className="link-btn" onClick={() => setCover('')}>
+              Remove cover
+            </button>
+          )}
+          {photoError && <p className="muted small">{photoError}</p>}
+        </div>
+      </div>
+      <label className="field">
+        <span>Title</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+      </label>
+      <label className="field">
+        <span>Author</span>
+        <input value={authors} onChange={(e) => setAuthors(e.target.value)} placeholder="Separate several with commas" />
+      </label>
+      <div className="field-pair">
+        <label className="field">
+          <span>Year</span>
+          <input value={year} onChange={(e) => setYear(e.target.value)} inputMode="numeric" placeholder="2024" />
+        </label>
+        <label className="field">
+          <span>Pages</span>
+          <input value={pages} onChange={(e) => setPages(e.target.value)} inputMode="numeric" placeholder="320" />
+        </label>
+      </div>
+      <label className="field">
+        <span>Cover image link</span>
+        <input value={cover.startsWith('data:') ? '' : cover} onChange={(e) => setCover(e.target.value)} placeholder={cover.startsWith('data:') ? 'Using your photo' : 'https://…'} inputMode="url" />
+      </label>
+      <label className="field">
+        <span>About the book</span>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} />
+      </label>
+      <div className="row-end">
+        <button type="button" className="btn ghost press" onClick={onDone}>
+          Cancel
+        </button>
+        <button className="btn primary press">Save</button>
+      </div>
+    </form>
+  );
+}
+
+/** Turn a phone photo into a small JPEG that fits comfortably in storage. */
+function shrinkPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, 480 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('no canvas'));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('bad image'));
+    };
+    img.src = url;
+  });
 }
