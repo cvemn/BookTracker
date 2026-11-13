@@ -23,7 +23,7 @@ function isbnOf(q: string): string | null {
   return /^(\d{9}[\dXx]|\d{13})$/.test(digits) ? digits : null;
 }
 
-async function getJson(url: string, signal?: AbortSignal): Promise<any> {
+export async function getJson(url: string, signal?: AbortSignal): Promise<any> {
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -46,7 +46,7 @@ export async function searchOpenLibrary(q: string, signal?: AbortSignal): Promis
         title: d.title,
         authors: d.author_name ?? [],
         year: d.first_publish_year,
-        pages: d.number_of_pages_median,
+        pages: plausiblePages(d.number_of_pages_median),
         cover: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : undefined,
         isbn: isbn ?? d.isbn?.[0],
       }),
@@ -66,15 +66,24 @@ export async function searchGoogle(q: string, signal?: AbortSignal): Promise<Sea
       return {
         key: it.id,
         source: 'google',
-        title: v.subtitle ? `${v.title}: ${v.subtitle}` : v.title,
+        // Subtitles are mostly noise ("A Novel", "A Joe Ledger Thriller"), so keep the title clean.
+        title: v.title,
         authors: v.authors ?? [],
         year: Number.isFinite(year) ? year : undefined,
-        pages: v.pageCount || undefined,
+        pages: plausiblePages(v.pageCount) ?? plausiblePages(v.printedPageCount),
         cover: thumb?.replace(/^http:/, 'https:').replace('&edge=curl', ''),
-        isbn: v.industryIdentifiers?.find((i: any) => i.type === 'ISBN_13')?.identifier,
+        isbn:
+          v.industryIdentifiers?.find((i: any) => i.type === 'ISBN_13')?.identifier ??
+          v.industryIdentifiers?.find((i: any) => i.type === 'ISBN_10')?.identifier,
         description: v.description ? cleanDescription(v.description) : undefined,
       };
     });
+}
+
+/** A page count we can believe: catalogs sometimes say 0, 1 or 99999. */
+export function plausiblePages(n: unknown): number | undefined {
+  const v = typeof n === 'string' ? parseInt(n, 10) : n;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 16 && v <= 5000 ? Math.round(v) : undefined;
 }
 
 const JUNK = /\b(summary of|summary & analysis|study guide|sparknotes|cliffsnotes|workbook for|analysis of)\b/i;
@@ -88,7 +97,7 @@ function norm(s: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
-function sameBook(a: SearchResult, b: SearchResult): boolean {
+export function sameBook(a: SearchResult, b: SearchResult): boolean {
   if (norm(a.title) !== norm(b.title)) return false;
   const aa = norm(a.authors[0] ?? '');
   const ba = norm(b.authors[0] ?? '');

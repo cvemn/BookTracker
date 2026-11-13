@@ -1,7 +1,10 @@
 // Dogear service worker: the app opens offline. Shelf data lives in device
 // storage, so it's always there. Book covers are left alone: they hop
 // through redirects to other hosts, which is easy to break from in here.
-const SHELL = 'dogear-shell-v2';
+// The build stamps its own version in here, so every release changes this file
+// and phones notice there's an update.
+const VERSION = '__DOGEAR_BUILD__';
+const SHELL = `dogear-shell-${VERSION}`;
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(['./', './manifest.webmanifest', './icon.svg'])));

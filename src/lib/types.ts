@@ -44,6 +44,10 @@ export interface Book {
   createdAt: number;
   updatedAt: number;
   deleted?: boolean;
+  /** When we last went looking for missing details (page count, cover…). */
+  lookedUpAt?: number;
+  /** Set once she fixes the details by hand, so lookups never undo her edits. */
+  detailsEditedAt?: number;
   takes: Record<string, Take>;
 }
 

@@ -23,6 +23,8 @@ export function mergeEntry<T extends Entry>(a: T, b: T): T {
     // Never lose a description / cover that only one side fetched.
     description: newer.description ?? (x.description || y.description),
     cover: newer.cover ?? (x.cover || y.cover),
+    pages: newer.pages ?? (x.pages || y.pages),
+    year: newer.year ?? (x.year || y.year),
     updatedAt: Math.max(x.updatedAt, y.updatedAt),
   };
   return merged as unknown as T;
