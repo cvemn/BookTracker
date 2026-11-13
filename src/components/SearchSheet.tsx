@@ -115,13 +115,13 @@ export function SearchSheet({ open, onClose, onAdded }: { open: boolean; onClose
                     <Cover title={r.title} author={r.authors[0]} src={r.cover} isbn={r.isbn} className="cover-xs" />
                     <span className="result-text">
                       <strong>{r.title}</strong>
-                      <span>{[r.authors.slice(0, 2).join(', '), r.year].filter(Boolean).join(' · ')}</span>
+                      <span>{[r.authors.slice(0, 2).join(', '), r.year, r.pages && `${r.pages} pages`].filter(Boolean).join(' · ')}</span>
                       {have && <em className="badge">on your shelf</em>}
                     </span>
                     <span className="result-plus" aria-hidden="true">{isOpen ? '–' : '+'}</span>
                   </button>
                   {isOpen && (
-                    <div className="result-actions">
+                    <div className="result-actions pills-3">
                       {STATUSES.map((s) => (
                         <button key={s.id} className={`pill pill-${s.id} press`} onClick={(e) => add(r, s.id, e.currentTarget)}>
                           <span aria-hidden="true">{s.emoji}</span> {s.label}
@@ -164,7 +164,7 @@ function ManualForm({ onCancel, onAdd, initialTitle }: { onCancel: () => void; o
         <span>Author</span>
         <input value={author} onChange={(e) => setAuthor(e.target.value)} />
       </label>
-      <div className="pills">
+      <div className="pills pills-3">
         {STATUSES.map((s) => (
           <button type="button" key={s.id} className={`pill pill-${s.id} ${status === s.id ? 'active' : ''}`} onClick={() => setStatus(s.id)}>
             <span aria-hidden="true">{s.emoji}</span> {s.label}

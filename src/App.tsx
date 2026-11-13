@@ -7,6 +7,7 @@ import { Mascot } from './components/Mascot';
 import { SearchSheet } from './components/SearchSheet';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Welcome } from './components/Welcome';
+import { enrichBook } from './lib/enrich';
 import { tick } from './lib/feel';
 import { books as booksOf, useStore } from './lib/store';
 import type { Book, Status, Take } from './lib/types';
@@ -128,7 +129,7 @@ function Shelf() {
       </header>
 
       <main onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <Hello name={me.name} mine={mine} />
+        <Hello name={me.name} mine={mine} onOpen={open} />
 
         <nav className="seg" role="tablist" style={{ ['--i' as string]: tabIndex }}>
           <span className="seg-pill" aria-hidden="true" />
@@ -190,6 +191,7 @@ function Shelf() {
         onAdded={(id) => {
           setSearchOpen(false);
           setOpenBook(id);
+          void enrichBook(id);
         }}
       />
       <BookSheet bookId={openBook} onClose={() => setOpenBook(null)} />
@@ -198,35 +200,53 @@ function Shelf() {
   );
 }
 
-function Hello({ name, mine }: { name: string; mine: { book: Book; take: Take }[] }) {
+function Hello({ name, mine, onOpen }: { name: string; mine: { book: Book; take: Take }[]; onOpen: (id: string, el: HTMLElement) => void }) {
   const year = new Date().getFullYear();
   const read = mine.filter(({ take }) => take.status === 'read');
   const readThisYear = read.filter(({ take }) => (take.finishedOn ?? '').startsWith(String(year))).length;
   const pages = read.reduce((n, { book }) => n + (book.pages ?? 0), 0);
   const rated = mine.filter(({ take }) => take.rating > 0);
   const avg = rated.length ? rated.reduce((n, { take }) => n + take.rating, 0) / rated.length : 0;
-  const reading = mine.filter(({ take }) => take.status === 'reading').length;
+  const reading = mine.filter(({ take }) => take.status === 'reading').sort((a, b) => b.take.updatedAt - a.take.updatedAt);
   const hour = new Date().getHours();
   const hi = hour < 5 ? 'Up late reading' : hour < 12 ? 'Good morning' : hour < 18 ? 'Hey there' : 'Cozy evening';
+  const now = reading[0];
 
   return (
     <section className="hello">
       <h1>
-        {hi}, {name}!
+        {hi}, <span className="hello-name">{name}</span>!
       </h1>
       <div className="stats">
-        <Stat n={readThisYear} label={`read in ${year}`} tone="tomato" />
-        <Stat n={pages.toLocaleString()} label="pages turned" tone="butter" />
-        <Stat n={avg ? avg.toFixed(1) : '–'} label="avg hearts" tone="pink" />
-        <Stat n={reading} label="reading now" tone="sage" />
+        <Stat n={readThisYear} label={`read in ${year}`} icon="📚" tone="tomato" />
+        <Stat n={compact(pages)} label="pages" icon="📄" tone="butter" />
+        <Stat n={avg ? avg.toFixed(1) : '–'} label="avg ♥" icon="💕" tone="pink" />
+        <Stat n={reading.length} label="reading" icon="📖" tone="sage" />
       </div>
+      {now && (
+        <button className="now-reading press" onClick={(e) => onOpen(now.book.id, e.currentTarget)}>
+          <Cover title={now.book.title} author={now.book.authors[0]} src={now.book.cover} isbn={now.book.isbn} className="cover-xs" />
+          <span className="now-reading-text">
+            <small>Reading now{reading.length > 1 ? ` · +${reading.length - 1} more` : ''}</small>
+            <strong>{now.book.title}</strong>
+            <span>{now.book.authors[0] ?? ''}</span>
+          </span>
+          <span className="now-reading-go" aria-hidden="true">✎</span>
+        </button>
+      )}
     </section>
   );
 }
 
-function Stat({ n, label, tone }: { n: number | string; label: string; tone: string }) {
+/** 12,345 pages reads better as 12.3k on a small tile. */
+function compact(n: number) {
+  return n >= 10000 ? `${(n / 1000).toFixed(n >= 100000 ? 0 : 1)}k` : n.toLocaleString();
+}
+
+function Stat({ n, label, icon, tone }: { n: number | string; label: string; icon: string; tone: string }) {
   return (
     <div className={`stat stat-${tone}`}>
+      <i aria-hidden="true">{icon}</i>
       <b>{n}</b>
       <span>{label}</span>
     </div>
@@ -237,6 +257,7 @@ function BookCard({ book, take, onOpen }: { book: Book; take: Take; onOpen: (el:
   return (
     <button className="book-card press" onClick={(e) => onOpen(e.currentTarget)}>
       <Cover title={book.title} author={book.authors[0]} src={book.cover} isbn={book.isbn} />
+      <span className="plank" aria-hidden="true" />
       <span className="book-card-title">{book.title}</span>
       <span className="book-card-author">{book.authors[0] ?? '\u00a0'}</span>
       <span className="book-card-takes">

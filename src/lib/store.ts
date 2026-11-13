@@ -172,6 +172,20 @@ export function updateBook(id: string, patch: Partial<Omit<Book, 'kind' | 'id' |
   putEntries([{ ...b, ...patch, updatedAt: Date.now() }]);
 }
 
+/**
+ * Add details a lookup found, but only where the book still has a gap: she may
+ * have typed something in while the lookup was running.
+ */
+export function fillDetails(id: string, found: Partial<Book>, lookedUpAt = Date.now()) {
+  const b = state.entries[id];
+  if (!b || b.kind !== 'book') return;
+  const patch: Partial<Book> = { lookedUpAt };
+  for (const [k, v] of Object.entries(found) as [keyof Book, unknown][]) {
+    if (v !== undefined && v !== '' && (b[k] === undefined || b[k] === '')) (patch as Record<string, unknown>)[k] = v;
+  }
+  putEntries([{ ...b, ...patch }]);
+}
+
 export function setTake(id: string, patch: Partial<Take>) {
   const b = state.entries[id];
   const me = state.me;

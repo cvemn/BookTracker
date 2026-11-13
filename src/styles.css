@@ -23,7 +23,8 @@
   --radius: 18px;
   --display: 'Fraunces', 'Georgia', serif;
   --body: 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color-scheme: light;
+  color-scheme: only light;
+  --topbar-h: 60px;
 }
 
 * { box-sizing: border-box; }
@@ -224,7 +225,7 @@ select { width: auto; padding: 8px 12px; cursor: pointer; }
 }
 @keyframes fade { from { opacity: 0; } }
 .sheet {
-  position: relative; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; overscroll-behavior: contain;
+  position: relative; width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain;
   background: var(--paper); border: 3px solid var(--line); border-bottom: 0; border-radius: 28px 28px 0 0;
   padding: 14px 20px calc(24px + env(safe-area-inset-bottom)); animation: slideup 0.32s cubic-bezier(.2,1.1,.3,1);
 }
@@ -340,7 +341,7 @@ button { -webkit-user-select: none; user-select: none; touch-action: manipulatio
 
 /* segmented shelf switcher with a sliding pill */
 .seg {
-  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 56px); z-index: 4;
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--topbar-h) + 4px); z-index: 4;
   display: grid; grid-template-columns: repeat(4, 1fr); background: var(--paper-2);
   border: 2.5px solid var(--line); border-radius: 999px; padding: 4px; margin: 4px 0 12px;
   box-shadow: var(--shadow);
@@ -522,3 +523,172 @@ button { -webkit-user-select: none; user-select: none; touch-action: manipulatio
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field-pair .field { margin: 0; }
 .edit-details-form textarea { resize: vertical; }
+
+/* ================= polish: phones first (tuned on a Galaxy S22, 360px) ================= */
+
+/* Top bar spans the full width and frosts what scrolls under it. */
+.topbar {
+  height: var(--topbar-h); padding-block: 0;
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+.brand .mascot { flex: none; }
+.avatars .avatar { box-shadow: 2px 2px 0 var(--line); transition: transform .2s cubic-bezier(.2,1.6,.4,1); }
+.avatars:active .avatar { transform: rotate(-12deg) scale(.92); }
+
+/* Greeting */
+.hello h1 { text-wrap: balance; }
+.hello-name {
+  color: var(--tomato); font-style: italic;
+  background: linear-gradient(transparent 62%, var(--butter) 62%, var(--butter) 90%, transparent 90%);
+  padding: 0 .08em; border-radius: 4px;
+}
+
+/* Stats: one joined card instead of four cramped boxes. */
+.stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0; overflow: hidden;
+  background: var(--card); border: 2.5px solid var(--line); border-radius: 20px; box-shadow: var(--shadow);
+}
+.stat {
+  border: 0; border-radius: 0; box-shadow: none; background: none; padding: 12px 4px 10px;
+  justify-items: center; text-align: center; gap: 0; position: relative; min-width: 0;
+}
+.stat + .stat::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; border-left: 2px dashed rgba(59, 42, 32, .18); }
+.stat i { font-style: normal; font-size: 1.05rem; line-height: 1; margin-bottom: 4px; }
+.stat b { font-size: 1.45rem; line-height: 1.05; white-space: nowrap; }
+.stat span { font-size: .7rem; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.stat-tomato b { color: #e85a37; }
+.stat-butter b { color: #c98a00; }
+.stat-pink b { color: #e8467a; }
+.stat-sage b { color: #3f8f52; }
+@media (max-width: 560px) {
+  .stats { gap: 0; margin-bottom: 14px; }
+  .stat { padding: 10px 2px 9px; border: 0; box-shadow: none; }
+  .stat b { font-size: 1.25rem; }
+  .stat span { font-size: .6rem; }
+}
+
+/* "Reading now" spotlight */
+.now-reading {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 12px;
+  margin: 0 0 16px; padding: 10px 12px; border: 2.5px solid var(--line); border-radius: 18px; box-shadow: var(--shadow);
+  background: linear-gradient(110deg, var(--butter-soft), var(--pink-soft));
+  animation: rise .45s .1s both;
+}
+.now-reading .cover-xs { width: 40px; }
+.now-reading-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.now-reading-text small { font-size: .68rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+.now-reading-text strong { font-family: var(--display); font-weight: 800; font-size: 1.05rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-reading-text span { font-size: .8rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-reading-go { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--card); border: 2px solid var(--line); font-weight: 900; }
+.now-reading:active { transform: scale(.98); }
+
+/* Shelf switcher fits four tabs on a 360px phone. */
+.seg button { white-space: nowrap; min-width: 0; }
+@media (max-width: 480px) {
+  .seg { padding: 3px; }
+  .seg-pill { top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 4); }
+  .seg button { font-size: .8rem; gap: 3px; padding: 8px 0; min-height: 40px; letter-spacing: -.01em; }
+  .seg button b { font-size: .62rem; min-width: 17px; height: 17px; padding: 0 4px; }
+}
+.toolbar select, .toolbar .filter { box-shadow: 2px 2px 0 var(--line); }
+
+/* Books stand on little shelves. */
+.book-card .cover { box-shadow: 4px 4px 0 var(--line); }
+.plank {
+  display: block; height: 9px; margin: -1px -10px 0; position: relative; z-index: -1;
+  background: linear-gradient(#d9a066, #c4864c); border: 2px solid var(--line); border-radius: 3px;
+  box-shadow: 0 4px 0 rgba(59, 42, 32, .12);
+}
+.grid { isolation: isolate; }
+.grid li:first-child .plank, .grid li .plank { border-left-width: 2px; }
+@media (max-width: 480px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; }
+  .plank { margin: -1px -8px 0; height: 8px; }
+  .book-card .cover { box-shadow: 3px 3px 0 var(--line); border-width: 2px; border-radius: 4px 10px 10px 4px; }
+  .book-card .cover-ear { width: 16px; height: 16px; border-width: 2px; }
+  .book-card .cover::before { width: 6px; }
+  .book-card .cover-fallback { padding: 8px 6px 8px 10px; gap: 4px; }
+  .book-card .cover-fallback-title { font-size: .78rem; }
+  .book-card .cover-fallback-author { font-size: .6rem; }
+  .book-card-title { font-size: .84rem; margin-top: 8px; }
+  .book-card-author { font-size: .72rem; }
+  .book-card .hearts-sm { font-size: .7rem; }
+  .book-card .status-tag { font-size: .62rem; padding: 1px 6px; }
+  .book-card-takes .small { font-size: .7rem; }
+}
+@media (max-width: 330px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.book-card-takes { align-items: flex-start; }
+
+/* Status choices: three even tiles, emoji on top. */
+.pills-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pills-3 .pill {
+  display: grid; justify-items: center; gap: 2px; padding: 9px 4px 8px; border-radius: 16px;
+  font-size: .82rem; line-height: 1.15; text-align: center; min-width: 0;
+}
+.pills-3 .pill > span[aria-hidden] { font-size: 1.35rem; line-height: 1.1; }
+.result-actions.pills-3 { padding: 0 12px 12px; }
+
+/* The book sheet: a soft wash of the cover behind the hero. */
+.book-hero { position: relative; isolation: isolate; }
+.book-hero::before {
+  content: ''; position: absolute; z-index: -1; inset: -14px -20px 0; height: 240px;
+  background: var(--hero-img, linear-gradient(var(--butter-soft), var(--pink-soft))) center / cover;
+  filter: blur(28px) saturate(1.3); opacity: .45;
+  mask-image: linear-gradient(#000 40%, transparent); -webkit-mask-image: linear-gradient(#000 40%, transparent);
+  border-radius: 28px 28px 0 0;
+}
+.meta-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip-meta {
+  font-size: .78rem; font-weight: 800; padding: 4px 10px; border-radius: 999px; background: var(--card);
+  border: 2px solid var(--line); white-space: nowrap;
+}
+.chip-meta.add { border-style: dashed; color: var(--tomato); background: var(--card); cursor: pointer; }
+.chip-meta.shimmer {
+  color: var(--ink-2); border-color: rgba(59, 42, 32, .3);
+  background: linear-gradient(90deg, var(--card) 30%, var(--butter-soft) 50%, var(--card) 70%) 0 0 / 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (max-width: 480px) {
+  .meta-chips { justify-content: center; }
+  .sheet { padding-left: 16px; padding-right: 16px; }
+  .book-hero::before { inset: -14px -16px 0; }
+  .book-hero-text h2 { font-size: 1.45rem; }
+}
+
+/* My take: nothing may push past the card's edge. */
+.take-editor { grid-template-columns: minmax(0, 1fr); }
+.take-editor > * { min-width: 0; }
+.take textarea { width: 100%; }
+.rating-row .hearts-lg { font-size: 1.85rem; }
+@media (max-width: 480px) {
+  .take { padding: 14px 12px; border-radius: 18px; }
+  .take-mine { box-shadow: var(--shadow); }
+  .rating-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .rating-row .hearts-input { display: flex; justify-content: space-between; gap: 0; }
+  .rating-row .hearts-input button { min-width: 0; flex: 1; padding: 0; }
+  .vibe { font-size: .8rem; padding: 7px 10px; }
+  .field-row .date { flex: 1; min-width: 0; }
+}
+
+/* Editing details */
+.btn.fill-in { width: 100%; margin: 6px 0 2px; background: var(--butter-soft); }
+.fill-in .spinner { width: 16px; height: 16px; border-width: 2.5px; }
+.center { text-align: center; }
+
+/* Me sheet: buddies in a tidy grid. */
+.critters.small { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.critters.small button { width: auto; aspect-ratio: 1; height: auto; font-size: 1.35rem; }
+.card .row-start .btn { flex: 1 1 auto; }
+
+/* Sheets on phones: a touch more room at the top, frosted grip. */
+@media (max-width: 719px) {
+  .sheet { border-width: 2.5px; border-bottom: 0; }
+  .sheet-close { top: 12px; right: 12px; width: 36px; height: 36px; }
+}
+.pills-3 .pill { align-content: center; }

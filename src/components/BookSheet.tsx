@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchDescription } from '../lib/search';
+import { enrichBook, lookUpDetails } from '../lib/enrich';
 import { removeBook, setTake, updateBook, useStore } from '../lib/store';
 import { STATUSES, VIBES, type Book, type Take } from '../lib/types';
 import { ConfirmButton } from './ConfirmButton';
@@ -15,13 +15,13 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
   const [editing, setEditing] = useState(false);
   useEffect(() => setEditing(false), [bookId]);
 
-  // Fill in the blurb the first time a book is opened.
+  // Fill in anything the catalog search missed (page count, blurb, cover…).
+  const [looking, setLooking] = useState(false);
   useEffect(() => {
-    if (!book || book.description) return;
+    if (!book) return;
     let live = true;
-    fetchDescription(book.source, book.sourceKey).then((d) => {
-      if (live && d) updateBook(book.id, { description: d });
-    });
+    setLooking(true);
+    enrichBook(book.id).finally(() => live && setLooking(false));
     return () => {
       live = false;
     };
@@ -38,12 +38,24 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
 
   return (
     <Sheet open onClose={onClose} label={book.title} wide>
-      <div className="book-hero">
+      <div className="book-hero" style={book.cover && !book.cover.startsWith('data:') ? { ['--hero-img' as string]: `url("${book.cover.replace(/"/g, '%22')}")` } : undefined}>
         <Cover key={book.cover ?? ''} title={book.title} author={book.authors[0]} src={book.cover} isbn={book.isbn} className="cover-lg" />
         <div className="book-hero-text">
           <h2>{book.title}</h2>
           {book.authors.length > 0 && <p className="by">by {book.authors.join(', ')}</p>}
-          <p className="meta">{[book.year, book.pages && `${book.pages} pages`].filter(Boolean).join(' · ')}</p>
+          <div className="meta-chips">
+            {book.year && <span className="chip-meta">🗓️ {book.year}</span>}
+            {book.pages ? (
+              <span className="chip-meta">📄 {book.pages.toLocaleString()} pages</span>
+            ) : looking ? (
+              <span className="chip-meta shimmer">📄 finding pages…</span>
+            ) : (
+              <button className="chip-meta add press" onClick={() => (setEditing(true), tick())}>
+                📄 add page count
+              </button>
+            )}
+            {book.pages && <span className="chip-meta">⏱️ {readingTime(book.pages)}</span>}
+          </div>
           {book.description && <Blurb text={book.description} />}
           <button className="btn tiny ghost press edit-details" onClick={() => (setEditing(true), tick())}>
             ✏️ Edit details
@@ -59,7 +71,7 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
         {mine ? (
           <TakeEditor key={book.id} book={book} take={mine} />
         ) : (
-          <div className="pills">
+          <div className="pills pills-3">
             {STATUSES.map((s) => (
               <button
                 key={s.id}
@@ -91,6 +103,12 @@ export function BookSheet({ bookId, onClose }: { bookId: string | null; onClose:
       )}
     </Sheet>
   );
+}
+
+/** About 40 pages an hour, rounded to something friendly. */
+function readingTime(pages: number) {
+  const h = pages / 40;
+  return h < 1.5 ? 'about an hour' : `~${Math.round(h)} hrs`;
 }
 
 function Blurb({ text }: { text: string }) {
@@ -132,7 +150,7 @@ function TakeEditor({ book, take }: { book: Book; take: Take }) {
 
   return (
     <div className="take-editor">
-      <div className="pills" role="radiogroup" aria-label="Status">
+      <div className="pills pills-3" role="radiogroup" aria-label="Status">
         {STATUSES.map((s) => (
           <button
             key={s.id}
@@ -153,7 +171,7 @@ function TakeEditor({ book, take }: { book: Book; take: Take }) {
 
       {take.status !== 'want' && (
         <>
-          <div className="field-row">
+          <div className="field-row rating-row">
             <span className="field-label">Rating</span>
             <Hearts value={take.rating} onChange={(rating) => setTake(book.id, { rating })} size="lg" />
           </div>
@@ -205,6 +223,31 @@ function EditDetails({ book, onDone }: { book: Book; onDone: () => void }) {
   const [cover, setCover] = useState(book.cover ?? '');
   const [description, setDescription] = useState(book.description ?? '');
   const [photoError, setPhotoError] = useState('');
+  const [lookup, setLookup] = useState<'idle' | 'busy' | 'none' | 'offline'>('idle');
+
+  // Ask the catalogs again and fill only the boxes that are still empty.
+  const fillIn = async () => {
+    tick();
+    setLookup('busy');
+    const draft: Book = {
+      ...book,
+      title: title.trim() || book.title,
+      authors: authors.split(',').map((a) => a.trim()).filter(Boolean),
+      year: num(year),
+      pages: num(pages),
+      cover: cover.trim() || undefined,
+      description: description.trim() || undefined,
+      sourceKey: title.trim() === book.title ? book.sourceKey : undefined,
+      source: title.trim() === book.title ? book.source : 'manual',
+    };
+    const { found, reached } = await lookUpDetails(draft);
+    if (found.pages && !pages) setPages(String(found.pages));
+    if (found.year && !year) setYear(String(found.year));
+    if (found.cover && !cover) setCover(found.cover);
+    if (found.description && !description) setDescription(found.description);
+    setLookup(Object.keys(found).length ? 'idle' : reached ? 'none' : 'offline');
+    if (Object.keys(found).length) success();
+  };
 
   const num = (v: string) => {
     const n = parseInt(v, 10);
@@ -218,6 +261,7 @@ function EditDetails({ book, onDone }: { book: Book; onDone: () => void }) {
       pages: num(pages),
       cover: cover.trim() || undefined,
       description: description.trim() || undefined,
+      detailsEditedAt: Date.now(),
     });
     success();
     onDone();
@@ -262,6 +306,12 @@ function EditDetails({ book, onDone }: { book: Book; onDone: () => void }) {
           {photoError && <p className="muted small">{photoError}</p>}
         </div>
       </div>
+      <button type="button" className="btn ghost press fill-in" onClick={fillIn} disabled={lookup === 'busy'}>
+        {lookup === 'busy' ? <span className="spinner" aria-hidden="true" /> : <span aria-hidden="true">🐾</span>}
+        {lookup === 'busy' ? 'Miso is sniffing around…' : 'Fill in the blanks for me'}
+      </button>
+      {lookup === 'none' && <p className="muted small center">Couldn’t find anything more for this one. You can type it in below.</p>}
+      {lookup === 'offline' && <p className="muted small center">Couldn’t reach the library. Check your connection?</p>}
       <label className="field">
         <span>Title</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} required />

@@ -15,9 +15,14 @@ time it opens, and the very first time gives a quick four-step tour.
 - **Find any book**: type a title, author or ISBN and Dogear fetches the cover,
   author, year, page count and blurb from [Open Library](https://openlibrary.org)
   (falling back to Google Books). No API key needed. Can't find it? Add it by hand.
+  Anything the search missed (page count most often) is filled in quietly in the
+  background from the book's editions, its ISBN or Google Books, and **Edit
+  details → Fill in the blanks for me** asks again on demand.
 - **My take**: mark a book as *Read it*, *Reading* or *Want to read*, give it up
   to 5 hearts, pick vibes (😭 🫶 🌶️ 🤯 …) and write scribbles.
-- **Works offline** and installs like a real app on Android and iPhone.
+- **Works offline** and installs like a real app on Android and iPhone. New
+  versions arrive on their own: the installed app checks whenever it's opened
+  and swaps to the new version while it's in the background. Her books stay put.
 - **Never loses her books**: everything is saved on the phone as you go (in the
   Android app, to the app's own storage too, which Android backs up with the
   phone). **Me → Save a backup** sends a backup file to Google Drive, email or
